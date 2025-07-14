@@ -42,34 +42,28 @@ export default function SentinelRevolutionaryFixed() {
   const prevStatus = useRef(status)
 
   useEffect(() => {
-    const storedPending = localStorage.getItem("pendingReports")
-    const storedApproved = localStorage.getItem("approvedGolpistas")
-    const storedRejected = localStorage.getItem("rejectedReports")
-    const storedLoggedInUsers = localStorage.getItem("loggedInUsers")
+    async function fetchData() {
+      try {
+        const response = await fetch('/api/reports');
+        const data = await response.json();
+        
+        setPendingReports(data.pendingReports);
+        setApprovedGolpistas(data.approvedReports);
+        setRejectedReports(data.rejectedReports);
+      } catch (error) {
+        console.error('Error fetching reports:', error);
+        toast({
+          title: "Erro ao carregar dados",
+          description: "Não foi possível carregar as denúncias.",
+          variant: "destructive",
+          duration: 3000,
+        });
+      }
+    }
 
-    if (storedPending) setPendingReports(JSON.parse(storedPending))
-    if (storedApproved) setApprovedGolpistas(JSON.parse(storedApproved))
-    if (storedRejected) setRejectedReports(JSON.parse(storedRejected))
-    if (storedLoggedInUsers) setLoggedInUsers(new Set(JSON.parse(storedLoggedInUsers)))
-
-    setCurrentPageInternal("inicio")
-  }, [])
-
-  useEffect(() => {
-    localStorage.setItem("pendingReports", JSON.stringify(pendingReports))
-  }, [pendingReports])
-
-  useEffect(() => {
-    localStorage.setItem("approvedGolpistas", JSON.stringify(approvedGolpistas))
-  }, [approvedGolpistas])
-
-  useEffect(() => {
-    localStorage.setItem("rejectedReports", JSON.stringify(rejectedReports))
-  }, [rejectedReports])
-
-  useEffect(() => {
-    localStorage.setItem("loggedInUsers", JSON.stringify(Array.from(loggedInUsers)))
-  }, [loggedInUsers])
+    fetchData();
+    setCurrentPageInternal("inicio");
+  }, [toast])
 
   useEffect(() => {
     if (status === "authenticated" && prevStatus.current === "loading") {
@@ -101,101 +95,122 @@ export default function SentinelRevolutionaryFixed() {
   }
 
   const handleReportSubmit = useCallback(
-    (newReport: any) => {
-      const reportWithId = {
-        ...newReport,
-        id: crypto.randomUUID(),
-        status: "pending",
-        reporterDiscordId: session?.user?.id || session?.user?.email || "unknown",
+    async (newReport: any) => {
+      try {
+        const reportData = {
+          authorId: session?.user?.id || session?.user?.email || "unknown",
+          authorName: session?.user?.name || "Anônimo",
+          scammerName: newReport.nome || newReport.telegramUsername || newReport.discordUsername || newReport.otherPlatformIdentifier,
+          scammerId: newReport.discordId || newReport.telegramId || newReport.otherPlatformId || "unknown",
+          description: newReport.description,
+          images: newReport.images || [],
+        };
+
+        const response = await fetch('/api/reports', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(reportData),
+        });
+
+        if (!response.ok) throw new Error('Falha ao enviar denúncia');
+
+        const savedReport = await response.json();
+        setPendingReports((prev) => [...prev, savedReport]);
+
+        toast({
+          title: "Denúncia Enviada!",
+          description: "Sua denúncia foi enviada para aprovação.",
+          duration: 3000,
+        });
+
+        setCurrentPage("inicio");
+      } catch (error) {
+        console.error('Error submitting report:', error);
+        toast({
+          title: "Erro ao enviar denúncia",
+          description: "Não foi possível enviar sua denúncia. Tente novamente.",
+          variant: "destructive",
+          duration: 3000,
+        });
       }
-
-      setPendingReports((prev) => [...prev, reportWithId])
-
-      toast({
-        title: "Denúncia Enviada!",
-        description: "Sua denúncia foi enviada para aprovação.",
-        duration: 3000,
-      })
-
-      setCurrentPage("inicio")
     },
     [session, toast, setPendingReports],
   )
 
   const handleApproveReport = useCallback(
     async (reportId: string, risk: string) => {
-      let approvedReport: any = null
-      const reportToApprove = pendingReports.find((report) => report.id === reportId)
+      try {
+        const response = await fetch('/api/reports', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: reportId, status: 'approved', risk }),
+        });
 
-      if (reportToApprove) {
-        approvedReport = {
-          ...reportToApprove,
-          status: "approved",
-          denuncias: 1,
-          verificado: true,
-          risco: risk, 
-        }
+        if (!response.ok) throw new Error('Falha ao aprovar denúncia');
 
-        setPendingReports((prev) => prev.filter((report) => report.id !== reportId))
+        const approvedReport = await response.json();
 
-        setApprovedGolpistas((prevApproved) => {
-          if (!prevApproved.some((item) => item.id === approvedReport.id)) {
-            return [...prevApproved, approvedReport]
-          }
-          return prevApproved
-        })
+        setPendingReports((prev) => prev.filter((report) => report.id !== reportId));
+        setApprovedGolpistas((prev) => [...prev, approvedReport]);
 
         toast({
           title: "Denúncia Aprovada!",
-          description: `A denúncia de ${reportToApprove.nome || reportToApprove.telegramUsername || reportToApprove.discordUsername || reportToApprove.otherPlatformIdentifier} foi aprovada.`,
+          description: `A denúncia de ${approvedReport.scammer_name} foi aprovada.`,
           duration: 3000,
           variant: "default",
-        })
+        });
 
         try {
-          await sendDiscordWebhook(approvedReport)
-          if (approvedReport.reporterDiscordId) {
+          await sendDiscordWebhook(approvedReport);
+          if (approvedReport.author_id) {
             await sendDiscordDM(
-              approvedReport.reporterDiscordId,
+              approvedReport.author_id,
               `\`✅\` **Denúncia Aprovada**
 
-Sua denúncia sobre **${approvedReport.nome || approvedReport.telegramUsername || approvedReport.discordUsername || approvedReport.otherPlatformIdentifier}** foi verificada e aprovada com sucesso.
+Sua denúncia sobre **${approvedReport.scammer_name}** foi verificada e aprovada com sucesso.
 \`🛡️\` Obrigado por contribuir para a segurança da comunidade!`,
-            )
+            );
           }
         } catch (error) {
-          console.error("Erro ao enviar notificações Discord:", error)
+          console.error("Erro ao enviar notificações Discord:", error);
         }
+      } catch (error) {
+        console.error('Error approving report:', error);
+        toast({
+          title: "Erro ao aprovar denúncia",
+          description: "Não foi possível aprovar a denúncia. Tente novamente.",
+          variant: "destructive",
+          duration: 3000,
+        });
       }
     },
-    [pendingReports, toast, setApprovedGolpistas],
+    [toast],
   )
 
   const handleRejectReport = useCallback(
     async (reportId: string) => {
-      let rejectedReport: any = null
-      const reportToReject = pendingReports.find((report) => report.id === reportId)
+      try {
+        const response = await fetch('/api/reports', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: reportId, status: 'rejected' }),
+        });
 
-      if (reportToReject) {
-        rejectedReport = { ...reportToReject, status: "rejected" }
+        if (!response.ok) throw new Error('Falha ao rejeitar denúncia');
 
-        setPendingReports((prev) => prev.filter((report) => report.id !== reportId))
+        const rejectedReport = await response.json();
 
-        setRejectedReports((prevRejected) => {
-          if (!prevRejected.some((item) => item.id === rejectedReport.id)) {
-            return [...prevRejected, rejectedReport]
-          }
-          return prevRejected
-        })
+        setPendingReports((prev) => prev.filter((report) => report.id !== reportId));
+        setRejectedReports((prev) => [...prev, rejectedReport]);
 
         toast({
           title: "Denúncia Rejeitada!",
-          description: `A denúncia de ${reportToReject.nome || reportToReject.telegramUsername || reportToReject.discordUsername || reportToReject.otherPlatformIdentifier} foi rejeitada.`,
+          description: `A denúncia de ${rejectedReport.scammer_name} foi rejeitada.`,
           duration: 3000,
           variant: "destructive",
-        })
+        });
 
-        if (rejectedReport.reporterDiscordId) {
+        if (rejectedReport.author_id) {
           try {
             await sendDiscordDM(
               rejectedReport.reporterDiscordId,
@@ -205,9 +220,17 @@ Sua denúncia sobre **${rejectedReport.nome || rejectedReport.telegramUsername |
 \`💬\` Para mais detalhes, entre em contato com um administrador.`,
             )
           } catch (error) {
-            console.error("Erro ao enviar DM de rejeição:", error)
+            console.error("Erro ao enviar DM de rejeição:", error);
           }
         }
+      } catch (error) {
+        console.error('Error rejecting report:', error);
+        toast({
+          title: "Erro ao rejeitar denúncia",
+          description: "Não foi possível rejeitar a denúncia. Tente novamente.",
+          variant: "destructive",
+          duration: 3000,
+        });
       }
     },
     [pendingReports, toast, setRejectedReports],
@@ -215,93 +238,101 @@ Sua denúncia sobre **${rejectedReport.nome || rejectedReport.telegramUsername |
 
   const handleApproveRejectedReport = useCallback(
     async (reportId: string, risk: string) => {
-      let reApprovedReport: any = null
-      const reportToReApprove = rejectedReports.find((report) => report.id === reportId)
+      try {
+        const response = await fetch('/api/reports', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: reportId, status: 'approved', risk }),
+        });
 
-      if (reportToReApprove) {
-        reApprovedReport = {
-          ...reportToReApprove,
-          status: "approved",
-          denuncias: (reportToReApprove.denuncias || 0) + 1,
-          verificado: true,
-          risco: risk, 
-        }
+        if (!response.ok) throw new Error('Falha ao re-aprovar denúncia');
 
-        setRejectedReports((prev) => prev.filter((report) => report.id !== reportId))
+        const reApprovedReport = await response.json();
 
-        setApprovedGolpistas((prevApproved) => {
-          if (!prevApproved.some((item) => item.id === reApprovedReport.id)) {
-            return [...prevApproved, reApprovedReport]
-          }
-          return prevApproved
-        })
+        setRejectedReports((prev) => prev.filter((report) => report.id !== reportId));
+        setApprovedGolpistas((prev) => [...prev, reApprovedReport]);
 
         toast({
           title: "Denúncia Re-aprovada!",
-          description: `A denúncia de ${reportToReApprove.nome || reportToReApprove.telegramUsername || reportToReApprove.discordUsername || reportToReApprove.otherPlatformIdentifier} foi re-aprovada.`,
+          description: `A denúncia de ${reApprovedReport.scammer_name} foi re-aprovada.`,
           duration: 3000,
           variant: "default",
-        })
+        });
 
         try {
-          await sendDiscordWebhook(reApprovedReport)
-          if (reApprovedReport.reporterDiscordId) {
+          await sendDiscordWebhook(reApprovedReport);
+          if (reApprovedReport.author_id) {
             await sendDiscordDM(
-              reApprovedReport.reporterDiscordId,
+              reApprovedReport.author_id,
               `\`✅\` **Denúncia Re-aprovada**
 
-Sua denúncia sobre **${reApprovedReport.nome || reApprovedReport.telegramUsername || reApprovedReport.discordUsername || reApprovedReport.otherPlatformIdentifier}** foi re-aprovada após nova análise.
+Sua denúncia sobre **${reApprovedReport.scammer_name}** foi re-aprovada após nova análise.
 \`🛡️\` Obrigado por contribuir para a segurança da comunidade!`,
-            )
+            );
           }
         } catch (error) {
-          console.error("Erro ao enviar notificações de re-aprovação:", error)
+          console.error("Erro ao enviar notificações de re-aprovação:", error);
         }
+      } catch (error) {
+        console.error('Error re-approving report:', error);
+        toast({
+          title: "Erro ao re-aprovar denúncia",
+          description: "Não foi possível re-aprovar a denúncia. Tente novamente.",
+          variant: "destructive",
+          duration: 3000,
+        });
       }
     },
-    [rejectedReports, toast, setApprovedGolpistas],
+    [toast],
   )
 
   const handleRejectApprovedReport = useCallback(
     async (reportId: string) => {
-      let reRejectedReport: any = null
-      const reportToReReject = approvedGolpistas.find((report) => report.id === reportId)
+      try {
+        const response = await fetch('/api/reports', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: reportId, status: 'rejected' }),
+        });
 
-      if (reportToReReject) {
-        reRejectedReport = { ...reportToReReject, status: "rejected" }
+        if (!response.ok) throw new Error('Falha ao rejeitar denúncia aprovada');
 
-        setApprovedGolpistas((prev) => prev.filter((report) => report.id !== reportId))
+        const reRejectedReport = await response.json();
 
-        setRejectedReports((prevRejected) => {
-          if (!prevRejected.some((item) => item.id === reRejectedReport.id)) {
-            return [...prevRejected, reRejectedReport]
-          }
-          return prevRejected
-        })
+        setApprovedGolpistas((prev) => prev.filter((report) => report.id !== reportId));
+        setRejectedReports((prev) => [...prev, reRejectedReport]);
 
         toast({
           title: "Denúncia Rejeitada!",
-          description: `A denúncia de ${reportToReReject.nome || reportToReReject.telegramUsername || reportToReReject.discordUsername || reportToReReject.otherPlatformIdentifier} foi movida para rejeitadas.`,
+          description: `A denúncia de ${reRejectedReport.scammer_name} foi movida para rejeitadas.`,
           duration: 3000,
           variant: "destructive",
-        })
+        });
 
-        if (reRejectedReport.reporterDiscordId) {
+        if (reRejectedReport.author_id) {
           try {
             await sendDiscordDM(
-              reRejectedReport.reporterDiscordId,
+              reRejectedReport.author_id,
               `\`❌\` **Denúncia Rejeitada Novamente** 
 
-Sua denúncia sobre **${reRejectedReport.nome || reRejectedReport.telegramUsername || reRejectedReport.discordUsername || reRejectedReport.otherPlatformIdentifier}** foi rejeitada após nova análise.
+Sua denúncia sobre **${reRejectedReport.scammer_name}** foi rejeitada após nova análise.
 \`💬\` Para mais detalhes, entre em contato com um administrador.`,
-            )
+            );
           } catch (error) {
-            console.error("Erro ao enviar DM de re-rejeição:", error)
+            console.error("Erro ao enviar DM de re-rejeição:", error);
           }
         }
+      } catch (error) {
+        console.error('Error rejecting approved report:', error);
+        toast({
+          title: "Erro ao rejeitar denúncia aprovada",
+          description: "Não foi possível rejeitar a denúncia. Tente novamente.",
+          variant: "destructive",
+          duration: 3000,
+        });
       }
     },
-    [approvedGolpistas, toast, setRejectedReports],
+    [toast],
   )
 
   const openGolpistaDetail = (golpista: any) => {
@@ -340,18 +371,32 @@ Sua denúncia sobre **${reRejectedReport.nome || reRejectedReport.telegramUserna
     setHowItWorksModalType(null)
   }
 
-  const handleClearAllReports = useCallback(() => {
-    setPendingReports([])
-    setApprovedGolpistas([])
-    setRejectedReports([])
-    localStorage.removeItem("pendingReports")
-    localStorage.removeItem("approvedGolpistas")
-    localStorage.removeItem("rejectedReports")
-    toast({
-      title: "Dados Limpos!",
-      description: "Todas as denúncias (pendentes, aprovadas, rejeitadas) foram removidas do localStorage.",
-      duration: 3000,
-    })
+  const handleClearAllReports = useCallback(async () => {
+    try {
+      const response = await fetch('/api/reports/clear', {
+        method: 'POST',
+      });
+
+      if (!response.ok) throw new Error('Falha ao limpar dados');
+
+      setPendingReports([]);
+      setApprovedGolpistas([]);
+      setRejectedReports([]);
+
+      toast({
+        title: "Dados Limpos!",
+        description: "Todas as denúncias foram removidas com sucesso.",
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Error clearing data:', error);
+      toast({
+        title: "Erro ao limpar dados",
+        description: "Não foi possível limpar os dados. Tente novamente.",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
   }, [toast])
 
   const currentUser = session?.user
