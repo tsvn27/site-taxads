@@ -29,6 +29,10 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { authorId, authorName, scammerName, scammerId, description, images, status = 'pending' } = body;
 
+    if (!scammerName || !description) {
+        return NextResponse.json({ error: `Missing required fields: ${!scammerName ? 'scammerName ' : ''}${!description ? 'description' : ''}`.trim() }, { status: 400 });
+    }
+
     const result = await sql`
       INSERT INTO reports (
         author_id,

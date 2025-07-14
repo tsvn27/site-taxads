@@ -13,6 +13,7 @@ async function main() {
       description TEXT NOT NULL,
       images TEXT[],
       status VARCHAR(50) DEFAULT 'pending',
+      risk VARCHAR(50) DEFAULT 'low',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `;

@@ -13,7 +13,8 @@ interface DenunciarPageProps {
   simulateLogin: (isAdmin: boolean) => void
   setCurrentPage: (page: string) => void
   handleReportSubmit: (report: any) => void
-  openHowItWorksModal: (type: "denounce" | "tags") => void 
+  openHowItWorksModal: (type: "denounce" | "tags") => void
+  validateForm: (report: any) => boolean
 }
 
 export function DenunciarPage({
@@ -22,6 +23,7 @@ export function DenunciarPage({
   setCurrentPage,
   handleReportSubmit,
   openHowItWorksModal,
+  validateForm,
 }: DenunciarPageProps) {
   const [formData, setFormData] = useState({
     nome: "",
@@ -87,6 +89,11 @@ export function DenunciarPage({
       }
     }
   }
+
+    const isFormValid = validateForm({
+    scammerName: formData.nome || formData.telegramUsername || formData.discordUsername || formData.otherPlatformIdentifier,
+    descricao: formData.descricao,
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -369,7 +376,8 @@ export function DenunciarPage({
               <div className="pt-4 md:pt-8">
                 <Button
                   type="submit"
-                  className="w-full bg-primary text-primary-foreground hover:bg-gray-100 py-5 md:py-7 rounded-xl md:rounded-2xl text-lg md:text-xl font-black uppercase tracking-wider transition-all duration-300 hover:scale-[1.01]"
+                  className="w-full bg-primary text-primary-foreground hover:bg-gray-100 py-5 md:py-7 rounded-xl md:rounded-2xl text-lg md:text-xl font-black uppercase tracking-wider transition-all duration-300 hover:scale-[1.01] disabled:opacity-50"
+                  disabled={!isFormValid}
                 >
                   <AlertTriangle className="w-6 h-6 md:w-7 md:h-7 mr-3 md:mr-4" />
                   ENVIAR DENÚNCIA

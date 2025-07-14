@@ -24,6 +24,7 @@ export default function SentinelRevolutionaryFixed() {
   const [approvedGolpistas, setApprovedGolpistas] = useState<any[]>([])
   const [rejectedReports, setRejectedReports] = useState<any[]>([])
   const [loggedInUsers, setLoggedInUsers] = useState<Set<string>>(new Set())
+  const [isLoading, setIsLoading] = useState(true);
 
   const [showGolpistaDetailModal, setShowGolpistaDetailModal] = useState(false)
   const [selectedGolpista, setSelectedGolpista] = useState<any>(null)
@@ -58,6 +59,8 @@ export default function SentinelRevolutionaryFixed() {
           variant: "destructive",
           duration: 3000,
         });
+      } finally {
+        setIsLoading(false);
       }
     }
 
@@ -101,8 +104,8 @@ export default function SentinelRevolutionaryFixed() {
           authorId: session?.user?.id || session?.user?.email || "unknown",
           authorName: session?.user?.name || "Anônimo",
           scammerName: newReport.nome || newReport.telegramUsername || newReport.discordUsername || newReport.otherPlatformIdentifier,
-          scammerId: newReport.discordId || newReport.telegramId || newReport.otherPlatformId || "unknown",
-          description: newReport.description,
+          scammerId: newReport.discordUserId || newReport.telegramUserId || newReport.otherPlatformId || "unknown",
+          description: newReport.descricao,
           images: newReport.images || [],
         };
 
@@ -112,7 +115,10 @@ export default function SentinelRevolutionaryFixed() {
           body: JSON.stringify(reportData),
         });
 
-        if (!response.ok) throw new Error('Falha ao enviar denúncia');
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Falha ao decodificar erro da API' }));
+          throw new Error(errorData.error || 'Falha ao enviar denúncia');
+        }
 
         const savedReport = await response.json();
         setPendingReports((prev) => [...prev, savedReport]);
@@ -408,6 +414,10 @@ Sua denúncia sobre **${reRejectedReport.scammer_name}** foi rejeitada após nov
       }
     : null
 
+  if (isLoading) {
+    return <div>Carregando...</div>; 
+  }
+
   return (
     <div className="min-h-screen bg-background text-white">
       <Header
@@ -447,6 +457,7 @@ Sua denúncia sobre **${reRejectedReport.scammer_name}** foi rejeitada após nov
             setCurrentPage={setCurrentPage}
             handleReportSubmit={handleReportSubmit}
             openHowItWorksModal={openHowItWorks}
+            validateForm={(report) => !!report.scammerName && !!report.descricao}
           />
         )}
         {currentPage === "admin-dashboard" && (

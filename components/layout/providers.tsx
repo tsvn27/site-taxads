@@ -3,7 +3,7 @@
 import type React from "react"
 import { ThemeProvider } from "@/components/theme-provider"
 import { SessionProvider } from "next-auth/react"
-import { Toaster } from "@/components/ui/toaster"
+
 
 interface ProvidersProps {
   children: React.ReactNode
@@ -14,7 +14,7 @@ export function Providers({ children }: ProvidersProps) {
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
       <SessionProvider>
         {children}
-        <Toaster />
+
       </SessionProvider>
     </ThemeProvider>
   )
