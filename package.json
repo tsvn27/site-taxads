@@ -5,12 +5,14 @@
   "scripts": {
     "build": "next build",
     "dev": "next dev",
+    "db:migrate": "node -r dotenv/config ./scripts/migrate.js",
     "lint": "next lint",
     "start": "next start"
   },
   "dependencies": {
     "@auth/core": "latest",
     "@hookform/resolvers": "^3.9.1",
+    "@neondatabase/serverless": "^1.0.1",
     "@radix-ui/react-accordion": "1.2.2",
     "@radix-ui/react-alert-dialog": "1.1.4",
     "@radix-ui/react-aspect-ratio": "1.1.1",
@@ -43,6 +45,7 @@
     "clsx": "^2.1.1",
     "cmdk": "1.0.4",
     "date-fns": "4.1.0",
+    "dotenv": "^17.2.0",
     "embla-carousel-react": "8.5.1",
     "fs": "^0.0.1-security",
     "input-otp": "1.4.1",
