@@ -1,0 +1,39 @@
+{
+  "node": {
+    "40c22085f28ad6b6c51e204cc2a150a05f9c197702": {
+      "workers": {
+        "app/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22C%3A%5C%5CUsers%5C%5Ccircu%5C%5CDownloads%5C%5Csite-taxads%5C%5Clib%5C%5Cimgbb-utils.ts%22%2C%5B%7B%22id%22%3A%2240c22085f28ad6b6c51e204cc2a150a05f9c197702%22%2C%22exportedName%22%3A%22uploadToImgBB%22%7D%5D%5D%2C%5B%22C%3A%5C%5CUsers%5C%5Ccircu%5C%5CDownloads%5C%5Csite-taxads%5C%5Cactions%5C%5Cdiscord.ts%22%2C%5B%7B%22id%22%3A%2240e2a65990f07ef3736eb2642981cff2362214a77a%22%2C%22exportedName%22%3A%22sendDiscordWebhook%22%7D%2C%7B%22id%22%3A%22608fbf1d9a8967d0d1a477023eb1a63252d51e0213%22%2C%22exportedName%22%3A%22sendDiscordDM%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/page": "action-browser"
+      }
+    },
+    "40e2a65990f07ef3736eb2642981cff2362214a77a": {
+      "workers": {
+        "app/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22C%3A%5C%5CUsers%5C%5Ccircu%5C%5CDownloads%5C%5Csite-taxads%5C%5Clib%5C%5Cimgbb-utils.ts%22%2C%5B%7B%22id%22%3A%2240c22085f28ad6b6c51e204cc2a150a05f9c197702%22%2C%22exportedName%22%3A%22uploadToImgBB%22%7D%5D%5D%2C%5B%22C%3A%5C%5CUsers%5C%5Ccircu%5C%5CDownloads%5C%5Csite-taxads%5C%5Cactions%5C%5Cdiscord.ts%22%2C%5B%7B%22id%22%3A%2240e2a65990f07ef3736eb2642981cff2362214a77a%22%2C%22exportedName%22%3A%22sendDiscordWebhook%22%7D%2C%7B%22id%22%3A%22608fbf1d9a8967d0d1a477023eb1a63252d51e0213%22%2C%22exportedName%22%3A%22sendDiscordDM%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/page": "action-browser"
+      }
+    },
+    "608fbf1d9a8967d0d1a477023eb1a63252d51e0213": {
+      "workers": {
+        "app/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22C%3A%5C%5CUsers%5C%5Ccircu%5C%5CDownloads%5C%5Csite-taxads%5C%5Clib%5C%5Cimgbb-utils.ts%22%2C%5B%7B%22id%22%3A%2240c22085f28ad6b6c51e204cc2a150a05f9c197702%22%2C%22exportedName%22%3A%22uploadToImgBB%22%7D%5D%5D%2C%5B%22C%3A%5C%5CUsers%5C%5Ccircu%5C%5CDownloads%5C%5Csite-taxads%5C%5Cactions%5C%5Cdiscord.ts%22%2C%5B%7B%22id%22%3A%2240e2a65990f07ef3736eb2642981cff2362214a77a%22%2C%22exportedName%22%3A%22sendDiscordWebhook%22%7D%2C%7B%22id%22%3A%22608fbf1d9a8967d0d1a477023eb1a63252d51e0213%22%2C%22exportedName%22%3A%22sendDiscordDM%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/page": "action-browser"
+      }
+    }
+  },
+  "edge": {},
+  "encryptionKey": "A54sBOYjvwLuD0TU2BSUrv3Zif89GOwriAMwbTP4erY="
+}
